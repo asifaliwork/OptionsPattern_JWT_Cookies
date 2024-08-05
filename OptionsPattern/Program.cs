@@ -114,7 +114,7 @@ builder.Services.AddAuthorization(options =>
         
        // JwtBearerDefaults.AuthenticationScheme,
         CookieAuthenticationDefaults.AuthenticationScheme,
-        "SecondJwtToken"
+       // "SecondJwtToken"
 
     );
     options.DefaultPolicy = DefaultPolicy
