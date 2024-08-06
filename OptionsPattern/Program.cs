@@ -38,9 +38,7 @@ builder.Services.AddScoped<IAccountServices , AccountServices>();
 builder.Services.AddScoped<IItemServices , ItemServices>();
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = "SecondToken";
-    options.DefaultChallengeScheme = "SecondToken";
-   
+    options.DefaultChallengeScheme = "SecondToken"; 
     options.DefaultAuthenticateScheme = "SecondToken";
 })
  .AddJwtBearer(options =>
@@ -86,23 +84,21 @@ builder.Services.AddAuthentication(options =>
        };
 
    })
-   .AddPolicyScheme("SecondToken", "SecondToken", options =>
+   .AddPolicyScheme("SecondToken", JwtBearerDefaults.AuthenticationScheme, options =>
    {
        options.ForwardDefaultSelector = context =>
        {
            string authorization = context.Request.Headers[HeaderNames.Authorization];
+           var allCooikes = context.Request.Cookies;
            if (!string.IsNullOrEmpty(authorization) && authorization.StartsWith("Bearer "))
            {
                var token = authorization.Substring("Bearer ".Length).Trim();
                var jwtHandler = new JwtSecurityTokenHandler();
-
-
                return (jwtHandler.CanReadToken(token) && jwtHandler.ReadJwtToken(token).Issuer.Equals("JWT:ValidIssuer"))
                  ? JwtBearerDefaults.AuthenticationScheme : "SecondJwtToken";
 
            }
 
-           // We don't know what it is
            return CookieAuthenticationDefaults.AuthenticationScheme;
        };
    });
@@ -111,36 +107,27 @@ builder.Services.AddAuthorization(options =>
 {
     var DefaultPolicy = new AuthorizationPolicyBuilder
     (
-        
-       // JwtBearerDefaults.AuthenticationScheme,
-        CookieAuthenticationDefaults.AuthenticationScheme,
-       // "SecondJwtToken"
-
+        CookieAuthenticationDefaults.AuthenticationScheme
     );
     options.DefaultPolicy = DefaultPolicy
           .RequireAuthenticatedUser()
           .Build();
-
-    options.AddPolicy("SecondJwt", policy =>
-    {
-        
-
-        policy.AddAuthenticationSchemes("SecondJwtToken");
-        //new AuthorizationPolicyBuilder("SecondJwtToken");
-        policy.RequireAuthenticatedUser()
-        .Build();
+    var second = new AuthorizationPolicyBuilder("SecondJwtToken");
+    options.AddPolicy("SecondJwt", second
+        .AddAuthenticationSchemes("SecondJwtToken")
+        .RequireAuthenticatedUser()
+        .Build()
 
 
-    });
+    );
+    var first = new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme);
+    options.AddPolicy("Jwt", first
+    
+       
+        .RequireAuthenticatedUser().Build()
+    );
 
-    options.AddPolicy("Jwt", policy =>
-    {
-        new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme);
-        //new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme);
-        policy.RequireAuthenticatedUser().Build();
-    });
-
-
+    
     options.AddPolicy("Cookies", policy =>
     {
         new AuthorizationPolicyBuilder(CookieAuthenticationDefaults.AuthenticationScheme);
